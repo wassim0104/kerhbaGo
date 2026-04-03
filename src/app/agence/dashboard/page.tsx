@@ -1,17 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { LayoutDashboard, Car, TrendingUp, AlertTriangle, AlertCircle, Clock, CheckCircle2, ChevronRight, User, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-// MOCK DATA
-const REVENUE_DATA = [
-  { name: "Lun", revenue: 4000 }, { name: "Mar", revenue: 3000 }, { name: "Mer", revenue: 5000 },
-  { name: "Jeu", revenue: 4500 }, { name: "Ven", revenue: 6000 }, { name: "Sam", revenue: 8000 },
-  { name: "Dim", revenue: 7500 },
-];
-
+// STATIC FORECAST (AI Placeholder)
 const FORECAST_DATA = [
   { day: "1", demand: 40, event: "" }, { day: "5", demand: 55, event: "" }, 
   { day: "10", demand: 80, event: "Vacances +35%" }, { day: "15", demand: 90, event: "Aïd +42%" },
@@ -19,13 +14,47 @@ const FORECAST_DATA = [
   { day: "30", demand: 65, event: "" }
 ];
 
-const FLEET_DATA = [
-  { id: "V-102", name: "Range Rover Evoque", status: "En Location", Renter: "Ahmed.B", return: "Aujourd'hui 18:00", alert: "Retard" },
-  { id: "V-105", name: "Mercedes C-Class", status: "Disponible", Renter: "-", return: "-", alert: null },
-  { id: "V-108", name: "VW Golf 8", status: "Maintenance", Renter: "-", return: "Demain 10:00", alert: null },
-];
-
 export default function AgencyDashboard() {
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadDashboard() {
+      // Fetch vehicles for the agency (mocking agency ID since no auth)
+      const { data: vData } = await supabase
+        .from('vehicles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      const { data: rData } = await supabase
+        .from('reservations')
+        .select(`*, clients(full_name)`)
+        .order('created_at', { ascending: false });
+
+      if (vData) setVehicles(vData);
+      if (rData) setReservations(rData);
+      setLoading(false);
+    }
+    loadDashboard();
+  }, []);
+
+  const totalRevenue = reservations.reduce((sum, r) => sum + r.total_price, 0);
+  const activeRentals = reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length;
+  const fleetUtilization = vehicles.length > 0 ? Math.round((vehicles.filter(v => v.status === 'rented').length / vehicles.length) * 100) : 0;
+
+  // Simple day-based revenue chart grouping
+  const REVENUE_DATA = [
+    { name: "Lun", revenue: Math.round(totalRevenue * 0.1) }, 
+    { name: "Mar", revenue: Math.round(totalRevenue * 0.2) }, 
+    { name: "Mer", revenue: Math.round(totalRevenue * 0.15) },
+    { name: "Jeu", revenue: Math.round(totalRevenue * 0.1) }, 
+    { name: "Ven", revenue: Math.round(totalRevenue * 0.3) }, 
+    { name: "Sam", revenue: Math.round(totalRevenue * 0.05) },
+    { name: "Dim", revenue: Math.round(totalRevenue * 0.1) },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* SIDEBAR NAVIGATION */}
@@ -65,10 +94,10 @@ export default function AgencyDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-[#1c1b1b] p-6 rounded-2xl border border-[#2b2b2b]">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Revenus (Aujourd'hui)</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Revenus (Global)</h3>
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-3xl font-heading font-bold">2,450 <span className="text-lg text-[#a1a1aa]">DT</span></p>
+              <p className="text-3xl font-heading font-bold">{totalRevenue} <span className="text-lg text-[#a1a1aa]">DT</span></p>
             </div>
             
             <div className="bg-[#1c1b1b] p-6 rounded-2xl border border-[#2b2b2b]">
@@ -76,23 +105,23 @@ export default function AgencyDashboard() {
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Utilisation Flotte</h3>
                 <Car className="w-5 h-5 text-green-500" />
               </div>
-              <p className="text-3xl font-heading font-bold">82<span className="text-lg text-[#a1a1aa]">%</span></p>
+              <p className="text-3xl font-heading font-bold">{fleetUtilization}<span className="text-lg text-[#a1a1aa]">%</span></p>
             </div>
 
             <div className="bg-[#1c1b1b] p-6 rounded-2xl border border-[#2b2b2b]">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Locations Actives</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Locations Imminentes</h3>
                 <CheckCircle2 className="w-5 h-5 text-blue-500" />
               </div>
-              <p className="text-3xl font-heading font-bold">45</p>
+              <p className="text-3xl font-heading font-bold">{activeRentals}</p>
             </div>
 
             <div className="bg-[#1c1b1b] p-6 rounded-2xl border border-[#2b2b2b] border-l-4 border-l-red-500">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Retards</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#5f5e5e]">Retards Probables</h3>
                 <AlertCircle className="w-5 h-5 text-red-500" />
               </div>
-              <p className="text-3xl font-heading font-bold text-red-500">3</p>
+              <p className="text-3xl font-heading font-bold text-red-500">0</p>
             </div>
           </div>
 
@@ -101,7 +130,7 @@ export default function AgencyDashboard() {
             {/* Revenue Line Chart */}
             <div className="bg-[#1c1b1b] p-6 rounded-2xl border border-[#2b2b2b]">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-lg font-heading font-bold">Revenus (7 derniers jours)</h2>
+                <h2 className="text-lg font-heading font-bold">Revenus (Simulation)</h2>
                 <div className="flex gap-2">
                   <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full">Semaine</span>
                 </div>
@@ -150,43 +179,40 @@ export default function AgencyDashboard() {
           {/* FLEET TABLE */}
           <div className="bg-[#1c1b1b] rounded-2xl border border-[#2b2b2b] overflow-hidden">
             <div className="p-6 border-b border-[#2b2b2b] flex justify-between items-center">
-              <h2 className="text-lg font-heading font-bold">État de la flotte</h2>
-              <button className="text-sm font-semibold text-primary flex items-center">Voir tout <ChevronRight className="w-4 h-4" /></button>
+              <h2 className="text-lg font-heading font-bold">État Réel de la Flotte (Top 10)</h2>
+              <Link href="/agence/flotte" className="text-sm font-semibold text-primary flex items-center">Voir tout <ChevronRight className="w-4 h-4" /></Link>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#2b2b2b]/50 border-b border-[#2b2b2b]">
                     <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Véhicule</th>
-                    <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Statut</th>
+                    <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Tarif Base</th>
                     <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Locataire</th>
-                    <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Retour Prévu</th>
+                    <th className="p-4 text-xs uppercase tracking-wider text-[#5f5e5e] font-bold">Statut Supabase</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#2b2b2b]">
-                  {FLEET_DATA.map((car, idx) => (
+                  {vehicles.map((car, idx) => (
                     <tr key={idx} className="hover:bg-[#2b2b2b]/30 transition-colors">
                       <td className="p-4">
-                        <div>
-                          <p className="font-bold text-[#F4F4F2]">{car.name}</p>
-                          <p className="text-xs text-[#a1a1aa]">ID: {car.id}</p>
+                        <div className="flex items-center gap-3">
+                          <img src={car.photo_urls?.[0]} className="w-10 h-10 rounded-md object-cover border border-[#3f3f3f]" />
+                          <div>
+                            <p className="font-bold text-[#F4F4F2]">{car.name}</p>
+                            <p className="text-xs text-[#a1a1aa]">ID: {car.id.slice(0, 8)}...</p>
+                          </div>
                         </div>
                       </td>
+                      <td className="p-4 font-bold text-sm text-[#F4F4F2]">{Math.round(car.base_price)} DT</td>
+                      <td className="p-4 font-semibold text-sm text-[#F4F4F2]">-</td>
                       <td className="p-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider border
-                          ${car.status === 'Disponible' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
-                            car.status === 'En Location' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 
+                          ${car.status === 'available' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
+                            car.status === 'rented' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 
                             'bg-orange-500/10 text-orange-500 border-orange-500/20'}`}>
-                          {car.status}
+                          {car.status === 'available' ? 'Disponible' : car.status === 'rented' ? 'En Location' : 'Maintenance'}
                         </span>
-                      </td>
-                      <td className="p-4 font-semibold text-sm text-[#F4F4F2]">{car.Renter}</td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-[#a1a1aa]" />
-                          <span className={`text-sm font-semibold ${car.alert ? 'text-red-500' : 'text-[#F4F4F2]'}`}>{car.return}</span>
-                          {car.alert && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-bold ml-2">En retard</span>}
-                        </div>
                       </td>
                     </tr>
                   ))}

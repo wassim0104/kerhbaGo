@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { User, MapPin, Navigation, History, Shield, MessageSquare, X, Send, Bot, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function ClientSpacePage() {
   const [chatOpen, setChatOpen] = useState(false);
@@ -12,10 +13,33 @@ export default function ClientSpacePage() {
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, chatOpen]);
+
+  // Fetch real reservations
+  useEffect(() => {
+    async function fetchReservations() {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          vehicles(name, photo_urls),
+          agencies(name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setReservations(data);
+      }
+      setLoading(false);
+    }
+    fetchReservations();
+  }, []);
 
   // Mock send message
   const handleSendMessage = (text: string) => {
@@ -33,6 +57,9 @@ export default function ClientSpacePage() {
     if (score >= 60) return 'text-primary stroke-primary';
     return 'text-red-500 stroke-red-500';
   };
+
+  const activeRes = reservations[0];
+  const historyRes = reservations.slice(1);
 
   return (
     <div className="min-h-screen bg-background relative pb-20 md:pb-0">
@@ -90,75 +117,89 @@ export default function ClientSpacePage() {
           {/* MAIN CONTENT AREA */}
           <div className="col-span-1 lg:col-span-2 space-y-8">
             
-            {/* ACTIVE RESERVATION */}
-            <section className="bg-[#1c1b1b] rounded-2xl overflow-hidden border border-primary/30 relative">
-              <div className="absolute top-0 right-0 p-4">
-                 <span className="bg-primary/10 text-primary text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full border border-primary/20">
-                    En Cours
-                 </span>
-              </div>
-              <div className="p-8">
-                <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
-                  <Navigation className="w-5 h-5 text-primary" /> Location Actuelle
-                </h3>
-                
-                <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                  <div className="w-full md:w-1/3 aspect-[4/3] bg-[#2b2b2b] rounded-xl overflow-hidden shadow-lg">
-                    <img 
-                      src="https://images.unsplash.com/photo-1594498305007-8ec7e7428f52?auto=format&fit=crop&q=80" 
-                      alt="Range Rover Evoque"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 w-full space-y-4">
-                    <div>
-                      <h4 className="text-2xl font-bold font-heading">Range Rover Evoque</h4>
-                      <p className="text-[#a1a1aa] font-semibold text-sm">Luxury Cars Agency - Aéroport Tunis</p>
+            {loading ? (
+              <div className="py-20 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
+            ) : (
+              <>
+                {/* ACTIVE RESERVATION */}
+                {activeRes ? (
+                  <section className="bg-[#1c1b1b] rounded-2xl overflow-hidden border border-primary/30 relative">
+                    <div className="absolute top-0 right-0 p-4">
+                      <span className="bg-primary/10 text-primary text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full border border-primary/20">
+                        {activeRes.status === 'confirmed' ? 'En Cours' : 'En Attente'}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#2b2b2b]">
-                      <div>
-                        <p className="text-xs text-[#a1a1aa] uppercase font-bold tracking-wider mb-1">Début</p>
-                        <p className="font-semibold text-sm">24 Oct, 10:00</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-[#a1a1aa] uppercase font-bold tracking-wider mb-1">Retour Prévu</p>
-                        <p className="font-semibold text-sm text-primary">30 Oct, 18:00</p>
+                    <div className="p-8">
+                      <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
+                        <Navigation className="w-5 h-5 text-primary" /> Réservation Récente
+                      </h3>
+                      
+                      <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                        <div className="w-full md:w-1/3 aspect-[4/3] bg-[#2b2b2b] rounded-xl overflow-hidden shadow-lg">
+                          <img 
+                            src={activeRes.vehicles?.photo_urls?.[0] || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341"} 
+                            alt={activeRes.vehicles?.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 w-full space-y-4">
+                          <div>
+                            <h4 className="text-2xl font-bold font-heading">{activeRes.vehicles?.name}</h4>
+                            <p className="text-[#a1a1aa] font-semibold text-sm">{activeRes.agencies?.name} - {activeRes.total_price} DT</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#2b2b2b]">
+                            <div>
+                              <p className="text-xs text-[#a1a1aa] uppercase font-bold tracking-wider mb-1">Début</p>
+                              <p className="font-semibold text-sm">{new Date(activeRes.start_date).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[#a1a1aa] uppercase font-bold tracking-wider mb-1">Retour Prévu</p>
+                              <p className="font-semibold text-sm text-primary">{new Date(activeRes.end_date).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <button className="w-full py-3 mt-4 bg-[#2b2b2b] hover:bg-[#3f3f3f] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
+                            <MapPin className="w-5 h-5" /> Gérer cette réservation
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <button className="w-full py-3 mt-4 bg-[#2b2b2b] hover:bg-[#3f3f3f] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
-                      <MapPin className="w-5 h-5" /> Suivre au GPS en Temps Réel
-                    </button>
+                  </section>
+                ) : (
+                  <div className="bg-[#1c1b1b] rounded-2xl border border-[#2b2b2b] p-8 text-center">
+                    <p className="text-[#a1a1aa]">Aucune réservation en cours.</p>
                   </div>
-                </div>
-              </div>
-            </section>
+                )}
 
-            {/* HISTORY */}
-            <section className="bg-[#1c1b1b] rounded-2xl border border-[#2b2b2b] p-8">
-              <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
-                <History className="w-5 h-5" /> Historique des Locations
-              </h3>
-              
-              <div className="space-y-4">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-[#2b2b2b] rounded-xl bg-[#0D0D0D]">
-                    <div className="flex items-center gap-4 mb-4 sm:mb-0">
-                      <div className="w-12 h-12 bg-[#2b2b2b] rounded-lg"></div>
-                      <div>
-                        <p className="font-bold">Volkswagen Golf 8</p>
-                        <p className="text-xs font-semibold text-[#a1a1aa]">AutoGo • 12 Sep - 15 Sep</p>
+                {/* HISTORY */}
+                <section className="bg-[#1c1b1b] rounded-2xl border border-[#2b2b2b] p-8">
+                  <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
+                    <History className="w-5 h-5" /> Historique des Locations
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {historyRes.length > 0 ? historyRes.map((res: any) => (
+                      <div key={res.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-[#2b2b2b] rounded-xl bg-[#0D0D0D]">
+                        <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                          <img src={res.vehicles?.photo_urls?.[0]} className="w-12 h-12 bg-[#2b2b2b] rounded-lg object-cover" />
+                          <div>
+                            <p className="font-bold">{res.vehicles?.name}</p>
+                            <p className="text-xs font-semibold text-[#a1a1aa]">{res.agencies?.name} • {new Date(res.start_date).toLocaleDateString()} - {new Date(res.end_date).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className={`flex items-center gap-1 text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full border ${res.status === 'completed' ? 'text-green-500 bg-green-500/10 border-green-500/20' : 'text-[#a1a1aa] bg-[#2b2b2b] border-[#3f3f3f]'}`}>
+                            <CheckCircle2 className="w-3 h-3" /> {res.status}
+                          </span>
+                          <p className="font-bold font-heading">{res.total_price} DT</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                       <span className="flex items-center gap-1 text-xs uppercase font-bold tracking-wider text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
-                         <CheckCircle2 className="w-3 h-3" /> Terminé
-                       </span>
-                       <p className="font-bold font-heading">540 DT</p>
-                    </div>
+                    )) : (
+                      <p className="text-sm text-[#a1a1aa]">Aucun historique.</p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </section>
+                </section>
+              </>
+            )}
           </div>
         </div>
       </main>
