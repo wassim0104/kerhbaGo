@@ -41,14 +41,27 @@ export default function ClientSpacePage() {
     fetchReservations();
   }, []);
 
-  // Mock send message
-  const handleSendMessage = (text: string) => {
+  // Logic for querying Next.js backend proxy mapped to n8n
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', text }]);
     setInput('');
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'bot', text: "L'IA n8n est connectée à l'API. Je traiterai cette demande: '" + text + "'" }]);
-    }, 1000);
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, clientId: 'client_ahmed_123' })
+      });
+      const data = await response.json();
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'bot', text: "Désolé, je ne peux pas traiter la demande." }]);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'bot', text: "L'assistant IA est temporairement indisponible." }]);
+    }
   };
 
   const TRUST_SCORE = 88;

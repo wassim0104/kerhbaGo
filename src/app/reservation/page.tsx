@@ -91,11 +91,24 @@ function ReservationContent() {
         console.warn("Reservation insert issue (likely RLS), proceeding to confirmation screen natively.");
       }
 
-      // Simulate Webhook delay for n8n processing
-      setTimeout(() => {
-        setProcessing(false);
-        setStep(4); // Success screen
-      }, 1500);
+      // Trigger n8n webhook asynchronously via Next.js proxy
+      try {
+        await fetch('/api/webhooks/reservation-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `RES-${Math.floor(Math.random()*10000)}`,
+            vehicleId: vehicle.id,
+            clientId: clientData?.id || "mock-client-id",
+            startDate, endDate, totalPrice
+          })
+        });
+      } catch (err) {
+        console.error("Webhook trigger failed", err);
+      }
+
+      setProcessing(false);
+      setStep(4); // Success screen
 
     } catch (e) {
       console.error(e);
