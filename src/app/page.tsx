@@ -12,6 +12,14 @@ export default function Homepage() {
   const [endDate, setEndDate] = useState("");
   const [category, setCategory] = useState("Tous Modèles");
 
+  const cityImages: Record<string, string> = {
+    "Tunis": "https://images.unsplash.com/photo-1583483425010-c566431a7710?auto=format&fit=crop&q=80",
+    "Sfax": "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80",
+    "Sousse": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80",
+    "Monastir": "https://images.unsplash.com/photo-1560961814-11f81d4df386?auto=format&fit=crop&q=80",
+    "Djerba": "https://images.unsplash.com/photo-1540202404-b911c43bcfaf?auto=format&fit=crop&q=80"
+  };
+
   // Restrictions de date: Aujourd'hui au mois prochain (approx 30 jours)
   const todayDate = new Date();
   const minDate = todayDate.toISOString().split("T")[0];
@@ -182,9 +190,9 @@ export default function Homepage() {
           <h2 className="display-md mb-12">Destinations <br/><span className="text-primary">Populaires.</span></h2>
           <div className="flex overflow-x-auto pb-8 gap-6 hide-scrollbar snap-x">
             {["Tunis", "Sfax", "Sousse", "Monastir", "Djerba"].map((city) => (
-              <div key={city} className="min-w-[280px] md:min-w-[320px] aspect-[4/5] relative rounded-2xl overflow-hidden snap-center group cursor-pointer">
+              <Link href="/agences" key={city} className="min-w-[280px] md:min-w-[320px] aspect-[4/5] relative rounded-2xl overflow-hidden snap-center group cursor-pointer block">
                 <img 
-                  src={`https://source.unsplash.com/featured/?architecture,city,${city.toLowerCase()}`}
+                  src={cityImages[city]}
                   alt={city}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -193,7 +201,7 @@ export default function Homepage() {
                   <h4 className="text-3xl font-heading font-bold text-white">{city}</h4>
                   <p className="text-primary font-bold mt-2 flex items-center gap-1">Voir les agences <ChevronRight className="w-4 h-4" /></p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
