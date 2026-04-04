@@ -13,10 +13,10 @@ export default function Homepage() {
   const [category, setCategory] = useState("Tous Modèles");
 
   const cityImages: Record<string, string> = {
-    "Tunis": "https://images.unsplash.com/photo-1597204998782-bdfdfa7dcdfc?auto=format&fit=crop&q=80",
+    "Tunis": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Ave_Habib_Bourguiba%2C_Tunis.JPG/800px-Ave_Habib_Bourguiba%2C_Tunis.JPG",
     "Sfax": "https://upload.wikimedia.org/wikipedia/commons/8/83/Sfax%2Cfa%C3%A7ades_de_l%E2%80%99immeuble.jpg",
-    "Sousse": "https://images.unsplash.com/photo-1628186105307-e8f001556094?auto=format&fit=crop&q=80",
-    "Monastir": "https://images.unsplash.com/photo-1647477810304-45e05459f270?auto=format&fit=crop&q=80",
+    "Sousse": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Sousse_Ribat_Aussicht.JPG/800px-Sousse_Ribat_Aussicht.JPG",
+    "Monastir": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/View_of_Monastir_from_the_ribat_tower.jpg/800px-View_of_Monastir_from_the_ribat_tower.jpg",
     "Djerba": "https://images.unsplash.com/photo-1601666497184-e91054ceb8b5?auto=format&fit=crop&q=80"
   };
 
