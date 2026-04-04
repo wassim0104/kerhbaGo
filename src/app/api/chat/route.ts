@@ -8,9 +8,8 @@ export async function POST(req: Request) {
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL_CHAT;
     
     if (!n8nWebhookUrl) {
-      // Mock AI response if n8n is not configured
       return NextResponse.json({ 
-        reply: "Simulated n8n Claude AI: J'ai bien reçu votre message concernant votre réservation. Comment puis-je vous aider ?" 
+        reply: "L'assistant IA n'est pas encore configuré. Veuillez réessayer plus tard." 
       });
     }
 
@@ -25,12 +24,31 @@ export async function POST(req: Request) {
       })
     });
     
-    if (!response.ok) throw new Error('n8n webhook failed');
+    if (!response.ok) {
+      console.error(`n8n webhook returned ${response.status}: ${response.statusText}`);
+      return NextResponse.json({ 
+        reply: "L'assistant IA est temporairement indisponible. Réessayez dans un instant." 
+      });
+    }
     
-    const data = await response.json();
-    return NextResponse.json({ reply: data.reply || "Réponse générique de n8n." });
+    // Handle various n8n response formats
+    const text = await response.text();
+    let reply = "Réponse reçue de l'assistant.";
+    
+    try {
+      const data = JSON.parse(text);
+      // n8n can return { reply: "..." }, { output: "..." }, { message: "..." }, or just a string
+      reply = data.reply || data.output || data.message || data.text || JSON.stringify(data);
+    } catch {
+      // n8n returned plain text
+      reply = text || reply;
+    }
+    
+    return NextResponse.json({ reply });
   } catch (error) {
     console.error("Chat API Error:", error);
-    return NextResponse.json({ error: "Failed to connect to kerhbaGo AI Brain." }, { status: 500 });
+    return NextResponse.json({ 
+      reply: "Une erreur est survenue lors de la connexion à l'assistant. Veuillez réessayer." 
+    });
   }
 }
