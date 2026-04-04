@@ -46,10 +46,10 @@ export default function Homepage() {
             <Link href="/offres" className="text-sm font-semibold hover:text-primary transition-colors">Offres</Link>
           </nav>
           <div className="flex gap-4 items-center">
-            <button className="hidden md:flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors">
+            <Link href="/espace-client" className="hidden md:flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors">
               <User className="w-5 h-5" />
               <span>Compte</span>
-            </button>
+            </Link>
             <button className="md:hidden">
               <Menu className="w-6 h-6" />
             </button>
