@@ -204,11 +204,21 @@ export default function CarDetailPage() {
             {/* Dates Form */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#5f5e5e]">Date de retrait</label>
-                <div className="flex items-center border-b-2 border-[#2b2b2b] focus-within:border-primary pb-2 transition-colors">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5f5e5e] cursor-pointer" onClick={() => { try { (document.getElementById('start-date') as HTMLInputElement | null)?.showPicker?.(); } catch(e) {} }}>Date de retrait</label>
+                <div 
+                  className="flex items-center border-b-2 border-[#2b2b2b] focus-within:border-primary pb-2 transition-colors cursor-pointer relative"
+                  onClick={(e) => {
+                    const input = document.getElementById('start-date') as HTMLInputElement;
+                    if (input && 'showPicker' in input) {
+                      try { input.showPicker(); } catch (err) {}
+                    }
+                  }}
+                >
                   <Calendar className="w-5 h-5 text-primary mr-2" />
                   <input 
+                    id="start-date"
                     type="date" 
+                    min={new Date().toISOString().split("T")[0]}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full bg-transparent outline-none font-semibold uppercase cursor-pointer"
@@ -216,12 +226,21 @@ export default function CarDetailPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#5f5e5e]">Date de retour</label>
-                <div className="flex items-center border-b-2 border-[#2b2b2b] focus-within:border-primary pb-2 transition-colors">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5f5e5e] cursor-pointer" onClick={() => { try { (document.getElementById('end-date') as HTMLInputElement | null)?.showPicker?.(); } catch(e) {} }}>Date de retour</label>
+                <div 
+                  className="flex items-center border-b-2 border-[#2b2b2b] focus-within:border-primary pb-2 transition-colors cursor-pointer relative"
+                  onClick={(e) => {
+                    const input = document.getElementById('end-date') as HTMLInputElement;
+                    if (input && 'showPicker' in input) {
+                      try { input.showPicker(); } catch (err) {}
+                    }
+                  }}
+                >
                   <Calendar className="w-5 h-5 text-primary mr-2" />
                   <input 
+                    id="end-date"
                     type="date" 
-                    min={startDate}
+                    min={startDate || new Date().toISOString().split("T")[0]}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full bg-transparent outline-none font-semibold uppercase cursor-pointer"
