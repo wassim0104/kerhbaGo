@@ -8,9 +8,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function ClientSpacePage() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([
-    { role: 'bot', text: "Bonjour Ahmed! Comment puis-je vous aider avec votre location ?" }
-  ]);
+  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -18,6 +16,14 @@ export default function ClientSpacePage() {
   const [loading, setLoading] = useState(true);
   const [clientProfile, setClientProfile] = useState<any>(null);
   const router = useRouter();
+
+  // Set chat greeting once profile is loaded
+  useEffect(() => {
+    if (clientProfile && messages.length === 0) {
+      const firstName = clientProfile.full_name?.split(' ')[0] || 'Client';
+      setMessages([{ role: 'bot', text: `Bonjour ${firstName}! Comment puis-je vous aider avec votre location ?` }]);
+    }
+  }, [clientProfile]);
 
   // Fetch real authenticated session
   useEffect(() => {
