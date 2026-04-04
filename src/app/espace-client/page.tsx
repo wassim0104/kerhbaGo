@@ -110,9 +110,23 @@ export default function ClientSpacePage() {
         })
       });
       const data = await response.json();
-      if (data.reply) {
-        setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
-        setChips(data.chips || []);
+      
+      // Safely extract reply as a string (n8n can return nested objects)
+      let replyText = "";
+      if (typeof data.reply === 'string') {
+        replyText = data.reply;
+      } else if (typeof data.reply === 'object' && data.reply !== null) {
+        replyText = data.reply.message || data.reply.text || data.reply.output || JSON.stringify(data.reply);
+      } else {
+        replyText = "Désolé, je ne peux pas traiter la demande.";
+      }
+
+      // Extract chips (could be in data.chips or data.reply.chips)
+      const responseChips = data.chips || (typeof data.reply === 'object' ? data.reply?.chips : null) || [];
+
+      if (replyText) {
+        setMessages(prev => [...prev, { role: 'bot', text: replyText }]);
+        setChips(responseChips);
       } else {
         setMessages(prev => [...prev, { role: 'bot', text: "Désolé, je ne peux pas traiter la demande." }]);
         setChips([]);
