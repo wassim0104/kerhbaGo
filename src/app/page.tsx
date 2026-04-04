@@ -190,7 +190,7 @@ export default function Homepage() {
           <h2 className="display-md mb-12">Destinations <br/><span className="text-primary">Populaires.</span></h2>
           <div className="flex overflow-x-auto pb-8 gap-6 hide-scrollbar snap-x">
             {["Tunis", "Sfax", "Sousse", "Monastir", "Djerba"].map((city) => (
-              <Link href="/agences" key={city} className="min-w-[280px] md:min-w-[320px] aspect-[4/5] relative rounded-2xl overflow-hidden snap-center group cursor-pointer block">
+              <Link href={`/agences?city=${encodeURIComponent(city)}`} key={city} className="min-w-[280px] md:min-w-[320px] aspect-[4/5] relative rounded-2xl overflow-hidden snap-center group cursor-pointer block">
                 <img 
                   src={cityImages[city]}
                   alt={city}
