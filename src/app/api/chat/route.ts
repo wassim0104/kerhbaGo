@@ -46,16 +46,18 @@ export async function POST(req: Request) {
     try {
       const data = JSON.parse(text);
       
-      // n8n can return different formats:
-      // Array: [{message: "...", chips: [...]}]
-      // Object: {reply: "..."} or {message: "..."} or {output: "..."}
-      if (Array.isArray(data)) {
-        const first = data[0];
-        reply = first?.message || first?.reply || first?.output || first?.text || JSON.stringify(first);
-        chips = first?.chips || [];
-      } else {
-        reply = data.reply || data.output || data.message || data.text || JSON.stringify(data);
-        chips = data.chips || [];
+      // Handle array or object from n8n
+      const rawData = Array.isArray(data) ? data[0] : data;
+      
+      reply = rawData?.message || rawData?.reply || rawData?.output || rawData?.text || (typeof rawData === 'string' ? rawData : JSON.stringify(rawData));
+      
+      // Look for chips in various common fields
+      chips = rawData?.chips || rawData?.suggestions || rawData?.actions || [];
+      
+      // Ensure chips is actually an array of strings
+      if (!Array.isArray(chips)) {
+        if (typeof chips === 'string') chips = [chips];
+        else chips = [];
       }
     } catch {
       reply = text || reply;

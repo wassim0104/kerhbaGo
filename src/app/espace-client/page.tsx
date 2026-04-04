@@ -81,6 +81,7 @@ export default function ClientSpacePage() {
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', text }]);
+    setChips([]);
     setInput('');
     
     try {
@@ -123,8 +124,8 @@ export default function ClientSpacePage() {
         replyText = "Désolé, je ne peux pas traiter la demande.";
       }
 
-      // Extract chips (could be in data.chips or data.reply.chips)
-      const responseChips = data.chips || (typeof data.reply === 'object' ? data.reply?.chips : null) || [];
+      // data already contains { reply, chips } from our API route
+      const responseChips = Array.isArray(data.chips) ? data.chips : [];
 
       if (replyText) {
         // Split multi-line messages into individual bubbles
@@ -344,10 +345,10 @@ export default function ClientSpacePage() {
             </div>
 
             {/* Suggestions */}
-            {messages[messages.length - 1]?.role === 'bot' && chips.length > 0 && (
+            {chips.length > 0 && (
               <div className="px-4 py-2 bg-[#0D0D0D] flex gap-2 overflow-x-auto hide-scrollbar border-t border-[#2b2b2b]">
                 {chips.map((chip) => (
-                  <button key={chip} onClick={() => { setChips([]); handleSendMessage(chip); }} className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa] bg-[#1c1b1b] px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-[#2b2b2b] border border-[#2b2b2b] transition-colors">
+                  <button key={chip} onClick={() => handleSendMessage(chip)} className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa] bg-[#1c1b1b] px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-[#2b2b2b] border border-[#2b2b2b] transition-colors">
                     {chip}
                   </button>
                 ))}
