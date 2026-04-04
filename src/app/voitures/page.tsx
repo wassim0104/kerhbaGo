@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 function CatalogueContent() {
   const searchParams = useSearchParams();
   const searchCity = searchParams.get("city") || "Tunis";
+  const searchAgency = searchParams.get("agency");
   
   const rawStart = searchParams.get("startDate");
   const rawEnd = searchParams.get("endDate");
@@ -47,11 +48,18 @@ function CatalogueContent() {
     fetchVehicles();
   }, []);
 
-  const filteredCars = vehicles.filter(c => 
-    c.base_price <= priceRange && 
-    (selectedCategory === "Tous Modèles" || c.category === selectedCategory) &&
-    c.agencies?.city === searchCity
-  );
+  const filteredCars = vehicles.filter(c => {
+    let match = c.base_price <= priceRange && 
+                (selectedCategory === "Tous Modèles" || c.category === selectedCategory);
+                
+    if (searchAgency) {
+      match = match && c.agency_id === searchAgency;
+    } else {
+      match = match && c.agencies?.city === searchCity;
+    }
+    
+    return match;
+  });
 
   return (
     <div className="min-h-screen bg-background">

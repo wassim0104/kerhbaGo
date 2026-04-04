@@ -85,7 +85,7 @@ export default function AgencesPage() {
                   </div>
                   <div className="flex gap-2">
                     <Link
-                      href={`/voitures?city=${encodeURIComponent(agency.city)}`}
+                      href={`/voitures?agency=${agency.id}&city=${encodeURIComponent(agency.city)}`}
                       className="flex-1 text-center bg-[#2b2b2b] hover:bg-primary text-white py-2 rounded-lg font-semibold text-sm transition-colors flex justify-center items-center gap-1"
                     >
                       Voir les véhicules <ChevronRight className="w-4 h-4" />
