@@ -27,8 +27,21 @@ function ReservationContent() {
   const [cinSource, setCinSource] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("konnect");
 
+  const [sessionUser, setSessionUser] = useState<any>(null);
+
   useEffect(() => {
-    async function fetchDetails() {
+    async function init() {
+      // 1. Enforce Auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+      setSessionUser(session.user);
+      setFullName(session.user.user_metadata?.full_name || "");
+      setPhone(session.user.user_metadata?.phone || "");
+
+      // 2. Fetch Details
       if (!vehicleId) return;
       const { data } = await supabase
         .from('vehicles')
@@ -39,8 +52,8 @@ function ReservationContent() {
       setVehicle(data);
       setLoading(false);
     }
-    fetchDetails();
-  }, [vehicleId]);
+    init();
+  }, [vehicleId, router]);
 
   const calculateDays = () => {
     if (!startDate || !endDate) return 1;
@@ -56,27 +69,17 @@ function ReservationContent() {
   const deposit = vehicle ? Math.round(vehicle.base_price * 10) : 0;
 
   const handleConfirmReservation = async () => {
-    if (!vehicle) return;
+    if (!vehicle || !sessionUser) return;
     setProcessing(true);
 
     try {
-      // 1. Create client (upsert logic theoretically, simple insert for MVP)
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .insert([{ full_name: fullName, phone, cin_number: cinSource }])
-        .select()
-        .single();
-      
-      // We gracefully continue if RLS blocks (since Auth isn't strictly enforced for the demo)
-      const clientId = clientData?.id || "mock-client-id-due-to-rls"; 
-      
-      // 2. Create reservation
+      // Create reservation using the true Authenticated User's ID
       const { error: resError } = await supabase
         .from('reservations')
         .insert([{
           vehicle_id: vehicle.id,
           agency_id: vehicle.agency_id,
-          client_id: clientData ? clientData.id : null, // handle RLS failure gracefully
+          client_id: sessionUser.id, // Securely mapped UUID
           start_date: startDate,
           end_date: endDate,
           total_days: currentDays,
@@ -84,11 +87,14 @@ function ReservationContent() {
           total_price: totalPrice,
           deposit_amount: deposit,
           payment_method: paymentMethod,
-          status: 'pending' // MVP mock
+          status: 'pending'
         }]);
 
       if (resError) {
-        console.warn("Reservation insert issue (likely RLS), proceeding to confirmation screen natively.");
+        console.error("Reservation insert failed:", resError);
+        alert("Erreur lors de la création de la réservation.");
+        setProcessing(false);
+        return;
       }
 
       // Trigger n8n webhook asynchronously via Next.js proxy
@@ -99,7 +105,7 @@ function ReservationContent() {
           body: JSON.stringify({
             id: `RES-${Math.floor(Math.random()*10000)}`,
             vehicleId: vehicle.id,
-            clientId: clientData?.id || "mock-client-id",
+            clientId: sessionUser.id,
             startDate, endDate, totalPrice
           })
         });

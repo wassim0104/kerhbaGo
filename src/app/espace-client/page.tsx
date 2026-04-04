@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { User, MapPin, Navigation, History, Shield, MessageSquare, X, Send, Bot, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -15,31 +16,59 @@ export default function ClientSpacePage() {
 
   const [reservations, setReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientProfile, setClientProfile] = useState<any>(null);
+  const router = useRouter();
 
-  // Auto-scroll chat
+  // Fetch real authenticated session
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, chatOpen]);
+    async function initUser() {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        router.push('/login');
+        return;
+      }
 
-  // Fetch real reservations
-  useEffect(() => {
-    async function fetchReservations() {
-      const { data, error } = await supabase
+      const userId = session.user.id;
+
+      // Fetch Profile
+      const { data: profileData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileData) {
+        setClientProfile(profileData);
+      } else {
+        // Fallback info from Auth Provider if trigger lagged (optional)
+        setClientProfile({
+          full_name: session.user.user_metadata?.full_name || session.user.email,
+          trust_score: 100,
+          created_at: session.user.created_at
+        });
+      }
+
+      // Fetch authentic reservations strictly for this user
+      const { data: resData, error: resError } = await supabase
         .from('reservations')
         .select(`
           *,
           vehicles(name, photo_urls),
           agencies(name)
         `)
+        .eq('client_id', userId)
         .order('created_at', { ascending: false });
       
-      if (!error && data) {
-        setReservations(data);
+      if (!resError && resData) {
+        setReservations(resData);
       }
+      
       setLoading(false);
     }
-    fetchReservations();
-  }, []);
+    
+    initUser();
+  }, [router]);
 
   // Logic for querying Next.js backend proxy mapped to n8n
   const handleSendMessage = async (text: string) => {
@@ -51,7 +80,7 @@ export default function ClientSpacePage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, clientId: 'client_ahmed_123' })
+        body: JSON.stringify({ message: text, clientId: clientProfile?.id || 'unknown' })
       });
       const data = await response.json();
       if (data.reply) {
@@ -64,7 +93,12 @@ export default function ClientSpacePage() {
     }
   };
 
-  const TRUST_SCORE = 88;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  const TRUST_SCORE = clientProfile?.trust_score || 100;
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-500 stroke-green-500';
     if (score >= 60) return 'text-primary stroke-primary';
@@ -73,6 +107,15 @@ export default function ClientSpacePage() {
 
   const activeRes = reservations[0];
   const historyRes = reservations.slice(1);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center pb-20 md:pb-0">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p className="text-white font-heading font-bold">Chargement de votre compte...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative pb-20 md:pb-0">
@@ -83,7 +126,10 @@ export default function ClientSpacePage() {
             kerhbaGo
           </Link>
           <div className="flex gap-4 items-center">
-            <button className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors">
+            <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-[#5f5e5e] font-semibold hover:text-red-500 transition-colors">
+              Déconnexion
+            </button>
+            <button className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors ml-4">
               <User className="w-5 h-5 mx-auto" /> <span>Mon Profil</span>
             </button>
           </div>
@@ -95,14 +141,15 @@ export default function ClientSpacePage() {
           
           {/* PROFILE & TRUST SCORE (Sidebar) */}
           <aside className="space-y-8">
-            <div className="bg-[#1c1b1b] rounded-2xl p-8 border border-[#2b2b2b] text-center">
-              <div className="w-24 h-24 bg-[#2b2b2b] rounded-full mx-auto mb-4 flex items-center justify-center">
-                <User className="w-12 h-12 text-[#5f5e5e]" />
+            <div className="bg-[#1c1b1b] rounded-2xl p-8 border border-[#2b2b2b] text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+              <div className="relative z-10 w-24 h-24 bg-[#2b2b2b] rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#0D0D0D]">
+                <span className="text-4xl font-heading font-extrabold text-white">{clientProfile?.full_name?.charAt(0) || "C"}</span>
               </div>
-              <h2 className="text-2xl font-heading font-bold mb-1">Ahmed Ben Ali</h2>
-              <p className="text-sm text-[#a1a1aa] mb-8">Membre depuis 2024</p>
+              <h2 className="text-2xl font-heading font-bold mb-1 relative z-10">{clientProfile?.full_name || "Client KerhbaGo"}</h2>
+              <p className="text-sm text-[#a1a1aa] mb-8 relative z-10">Membre depuis {new Date(clientProfile?.created_at || Date.now()).getFullYear()}</p>
               
-              <div className="relative w-40 h-40 mx-auto mb-4 flex items-center justify-center">
+              <div className="relative w-40 h-40 mx-auto mb-4 flex items-center justify-center z-10">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                   {/* Background Circle */}
                   <path
