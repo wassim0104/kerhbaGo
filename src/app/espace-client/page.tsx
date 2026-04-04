@@ -116,7 +116,9 @@ export default function ClientSpacePage() {
       if (typeof data.reply === 'string') {
         replyText = data.reply;
       } else if (typeof data.reply === 'object' && data.reply !== null) {
-        replyText = data.reply.message || data.reply.text || data.reply.output || JSON.stringify(data.reply);
+        // Handle n8n array or object response
+        const rawData = Array.isArray(data.reply) ? data.reply[0] : data.reply;
+        replyText = rawData.message || rawData.text || rawData.output || JSON.stringify(rawData);
       } else {
         replyText = "Désolé, je ne peux pas traiter la demande.";
       }
@@ -125,7 +127,13 @@ export default function ClientSpacePage() {
       const responseChips = data.chips || (typeof data.reply === 'object' ? data.reply?.chips : null) || [];
 
       if (replyText) {
-        setMessages(prev => [...prev, { role: 'bot', text: replyText }]);
+        // Split multi-line messages into individual bubbles
+        const lines = replyText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        setMessages(prev => [
+          ...prev, 
+          ...lines.map(line => ({ role: 'bot' as const, text: line }))
+        ]);
         setChips(responseChips);
       } else {
         setMessages(prev => [...prev, { role: 'bot', text: "Désolé, je ne peux pas traiter la demande." }]);
