@@ -167,7 +167,7 @@ export default function ClientSpacePage() {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className={`text-4xl font-heading font-bold ${getScoreColor(TRUST_SCORE).split(' ')[0]}`}>{TRUST_SCORE}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#a1a1aa]">Score IA</span>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#a1a1aa]">Score</span>
                 </div>
               </div>
               <p className="text-sm font-semibold mt-2">Niveau: <span className={getScoreColor(TRUST_SCORE).split(' ')[0]}>Bon</span></p>
