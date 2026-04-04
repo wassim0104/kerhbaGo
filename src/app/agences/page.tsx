@@ -68,8 +68,16 @@ export default function AgencesPage() {
             {agencies.map((agency) => (
               <div key={agency.id} className="bg-[#1c1b1b] border border-[#2b2b2b] rounded-xl overflow-hidden hover:border-primary transition-colors group">
                 <div className="h-48 bg-[#0D0D0D] flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#2b2b2b] to-[#1c1b1b] opacity-50" />
-                  <Building2 className="w-16 h-16 text-[#5f5e5e] group-hover:text-primary transition-colors relative z-10" />
+                  {agency.photo_url ? (
+                    <img 
+                      src={agency.photo_url} 
+                      alt={agency.name} 
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <Building2 className="w-16 h-16 text-[#5f5e5e] group-hover:text-primary transition-colors relative z-10" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1c1b1b] to-transparent opacity-80" />
                 </div>
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-2">
