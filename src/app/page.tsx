@@ -13,11 +13,11 @@ export default function Homepage() {
   const [category, setCategory] = useState("Tous Modèles");
 
   const cityImages: Record<string, string> = {
-    "Tunis": "https://images.unsplash.com/photo-1583483425010-c566431a7710?auto=format&fit=crop&q=80",
-    "Sfax": "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80",
-    "Sousse": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80",
-    "Monastir": "https://images.unsplash.com/photo-1560961814-11f81d4df386?auto=format&fit=crop&q=80",
-    "Djerba": "https://images.unsplash.com/photo-1540202404-b911c43bcfaf?auto=format&fit=crop&q=80"
+    "Tunis": "https://images.unsplash.com/photo-1597204998782-bdfdfa7dcdfc?auto=format&fit=crop&q=80",
+    "Sfax": "https://images.unsplash.com/photo-1616712398517-5e9fa0d3dbab?auto=format&fit=crop&q=80",
+    "Sousse": "https://images.unsplash.com/photo-1628186105307-e8f001556094?auto=format&fit=crop&q=80",
+    "Monastir": "https://images.unsplash.com/photo-1647477810304-45e05459f270?auto=format&fit=crop&q=80",
+    "Djerba": "https://images.unsplash.com/photo-1601666497184-e91054ceb8b5?auto=format&fit=crop&q=80"
   };
 
   // Restrictions de date: Aujourd'hui au mois prochain (approx 30 jours)
