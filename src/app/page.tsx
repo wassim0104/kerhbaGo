@@ -14,7 +14,7 @@ export default function Homepage() {
 
   const cityImages: Record<string, string> = {
     "Tunis": "https://images.unsplash.com/photo-1597204998782-bdfdfa7dcdfc?auto=format&fit=crop&q=80",
-    "Sfax": "https://images.unsplash.com/photo-1616712398517-5e9fa0d3dbab?auto=format&fit=crop&q=80",
+    "Sfax": "https://upload.wikimedia.org/wikipedia/commons/8/83/Sfax%2Cfa%C3%A7ades_de_l%E2%80%99immeuble.jpg",
     "Sousse": "https://images.unsplash.com/photo-1628186105307-e8f001556094?auto=format&fit=crop&q=80",
     "Monastir": "https://images.unsplash.com/photo-1647477810304-45e05459f270?auto=format&fit=crop&q=80",
     "Djerba": "https://images.unsplash.com/photo-1601666497184-e91054ceb8b5?auto=format&fit=crop&q=80"
