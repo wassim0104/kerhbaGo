@@ -3,12 +3,11 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { message, clientId } = body;
+    const { message, clientId, userContext } = body;
 
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL_CHAT;
     
     console.log("[CHAT API] Webhook URL configured:", n8nWebhookUrl ? "YES" : "NO");
-    console.log("[CHAT API] Webhook URL value:", n8nWebhookUrl);
     
     if (!n8nWebhookUrl) {
       return NextResponse.json({ 
@@ -18,7 +17,8 @@ export async function POST(req: Request) {
 
     const payload = { 
       userMessage: message, 
-      sessionId: clientId || 'anonymous', 
+      sessionId: clientId || 'anonymous',
+      userContext: userContext || {},
       timestamp: new Date().toISOString() 
     };
     

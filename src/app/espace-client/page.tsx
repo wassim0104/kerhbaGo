@@ -83,10 +83,30 @@ export default function ClientSpacePage() {
     setInput('');
     
     try {
+      // Build rich context for n8n AI
+      const activeReservation = reservations[0] || null;
+      const userContext = {
+        nom: clientProfile?.full_name || 'inconnu',
+        tel: clientProfile?.phone || 'inconnu',
+        trust_score: clientProfile?.trust_score || 100,
+        reservation_active: activeReservation ? {
+          vehicule: activeReservation.vehicles?.name || 'N/A',
+          agence: activeReservation.agencies?.name || 'N/A',
+          date_debut: activeReservation.start_date,
+          date_fin: activeReservation.end_date,
+          prix_total: activeReservation.total_price,
+          statut: activeReservation.status
+        } : null
+      };
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, clientId: clientProfile?.id || 'unknown' })
+        body: JSON.stringify({ 
+          message: text, 
+          clientId: clientProfile?.id || 'unknown',
+          userContext 
+        })
       });
       const data = await response.json();
       if (data.reply) {
