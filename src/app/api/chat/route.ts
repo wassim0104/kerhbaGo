@@ -46,19 +46,42 @@ export async function POST(req: Request) {
     try {
       const data = JSON.parse(text);
       
-      // Handle array or object from n8n
+      // Recursive function to find chips/suggestions in any nested object
+      const findChips = (obj: any): string[] => {
+        if (!obj || typeof obj !== 'object') return [];
+        
+        // Check current level
+        const possibleKeys = ['chips', 'suggestions', 'actions', 'choices', 'buttons'];
+        for (const key of possibleKeys) {
+          if (Array.isArray(obj[key])) return obj[key];
+        }
+        
+        // If it's an array, look inside each item
+        if (Array.isArray(obj)) {
+          for (const item of obj) {
+            const found = findChips(item);
+            if (found.length > 0) return found;
+          }
+        }
+        
+        // Otherwise look inside all properties
+        for (const key in obj) {
+          if (typeof obj[key] === 'object') {
+            const found = findChips(obj[key]);
+            if (found.length > 0) return found;
+          }
+        }
+        return [];
+      };
+
+      // Handle array or object from n8n for the main message
       const rawData = Array.isArray(data) ? data[0] : data;
-      
       reply = rawData?.message || rawData?.reply || rawData?.output || rawData?.text || (typeof rawData === 'string' ? rawData : JSON.stringify(rawData));
       
-      // Look for chips in various common fields
-      chips = rawData?.chips || rawData?.suggestions || rawData?.actions || [];
+      chips = findChips(data);
       
       // Ensure chips is actually an array of strings
-      if (!Array.isArray(chips)) {
-        if (typeof chips === 'string') chips = [chips];
-        else chips = [];
-      }
+      chips = chips.map(c => typeof c === 'string' ? c : (c?.text || c?.label || JSON.stringify(c)));
     } catch {
       reply = text || reply;
     }

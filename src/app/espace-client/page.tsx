@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function ClientSpacePage() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string, chips?: string[]}[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'bot', text: string, chips?: string[] }[]>([]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +29,7 @@ export default function ClientSpacePage() {
   useEffect(() => {
     async function initUser() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError || !session) {
         router.push('/login');
         return;
@@ -43,7 +43,7 @@ export default function ClientSpacePage() {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (profileData) {
         setClientProfile(profileData);
       } else {
@@ -65,14 +65,14 @@ export default function ClientSpacePage() {
         `)
         .eq('client_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (!resError && resData) {
         setReservations(resData);
       }
-      
+
       setLoading(false);
     }
-    
+
     initUser();
   }, [router]);
 
@@ -81,7 +81,7 @@ export default function ClientSpacePage() {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', text }]);
     setInput('');
-    
+
     try {
       // Build rich context for n8n AI
       const activeReservation = reservations[0] || null;
@@ -90,26 +90,26 @@ export default function ClientSpacePage() {
         tel: clientProfile?.phone || 'inconnu',
         trust_score: clientProfile?.trust_score || 100,
         reservation_active: activeReservation ? {
-          vehicule: activeReservation.vehicles?.name || 'N/A',
-          agence: activeReservation.agencies?.name || 'N/A',
+          // vehicule: activeReservation.vehicles?.name || 'N/A',
+          // agence: activeReservation.agencies?.name || 'N/A',
           date_debut: activeReservation.start_date,
           date_fin: activeReservation.end_date,
-          prix_total: activeReservation.total_price,
-          statut: activeReservation.status
+          // prix_total: activeReservation.total_price,
+          // statut: activeReservation.status
         } : null
       };
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: text, 
+        body: JSON.stringify({
+          message: text,
           clientId: clientProfile?.id || 'unknown',
-          userContext 
+          userContext
         })
       });
       const data = await response.json();
-      
+
       // Safely extract reply as a string (n8n can return nested objects)
       let replyText = "";
       if (typeof data.reply === 'string') {
@@ -128,14 +128,14 @@ export default function ClientSpacePage() {
       if (replyText) {
         // Split multi-line messages into individual bubbles
         const lines = replyText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        
+
         setMessages(prev => [
-          ...prev, 
-          ...lines.map((line, index) => ({ 
-            role: 'bot' as const, 
+          ...prev,
+          ...lines.map((line, index) => ({
+            role: 'bot' as const,
             text: line,
             // Attach chips only to the last bubble
-            chips: index === lines.length - 1 ? responseChips : [] 
+            chips: index === lines.length - 1 ? responseChips : []
           }))
         ]);
       } else {
@@ -191,7 +191,7 @@ export default function ClientSpacePage() {
 
       <main className="container py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* PROFILE & TRUST SCORE (Sidebar) */}
           <aside className="space-y-8">
             <div className="bg-[#1c1b1b] rounded-2xl p-8 border border-[#2b2b2b] text-center shadow-2xl relative overflow-hidden">
@@ -201,7 +201,7 @@ export default function ClientSpacePage() {
               </div>
               <h2 className="text-2xl font-heading font-bold mb-1 relative z-10">{clientProfile?.full_name || "Client KerhbaGo"}</h2>
               <p className="text-sm text-[#a1a1aa] mb-8 relative z-10">Membre depuis {new Date(clientProfile?.created_at || Date.now()).getFullYear()}</p>
-              
+
               <div className="relative w-40 h-40 mx-auto mb-4 flex items-center justify-center z-10">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                   {/* Background Circle */}
@@ -229,7 +229,7 @@ export default function ClientSpacePage() {
 
           {/* MAIN CONTENT AREA */}
           <div className="col-span-1 lg:col-span-2 space-y-8">
-            
+
             {loading ? (
               <div className="py-20 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
             ) : (
@@ -246,11 +246,11 @@ export default function ClientSpacePage() {
                       <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
                         <Navigation className="w-5 h-5 text-primary" /> Réservation Récente
                       </h3>
-                      
+
                       <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
                         <div className="w-full md:w-1/3 aspect-[4/3] bg-[#2b2b2b] rounded-xl overflow-hidden shadow-lg">
-                          <img 
-                            src={activeRes.vehicles?.photo_urls?.[0] || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341"} 
+                          <img
+                            src={activeRes.vehicles?.photo_urls?.[0] || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341"}
                             alt={activeRes.vehicles?.name}
                             className="w-full h-full object-cover"
                           />
@@ -288,7 +288,7 @@ export default function ClientSpacePage() {
                   <h3 className="text-xl font-heading font-bold mb-6 flex items-center gap-2">
                     <History className="w-5 h-5" /> Historique des Locations
                   </h3>
-                  
+
                   <div className="space-y-4">
                     {historyRes.length > 0 ? historyRes.map((res: any) => (
                       <div key={res.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-[#2b2b2b] rounded-xl bg-[#0D0D0D]">
@@ -331,7 +331,7 @@ export default function ClientSpacePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {/* Messages Area */}
             <div className="h-[300px] bg-[#0D0D0D] p-4 overflow-y-auto space-y-4">
               {messages.map((msg, i) => (
@@ -341,14 +341,14 @@ export default function ClientSpacePage() {
                       {msg.text}
                     </div>
                   </div>
-                  
+
                   {/* Inline Chips (Suggestions) */}
                   {msg.role === 'bot' && msg.chips && msg.chips.length > 0 && (
                     <div className="flex gap-2 flex-wrap pb-2">
                       {msg.chips.map((chip) => (
-                        <button 
-                          key={chip} 
-                          onClick={() => handleSendMessage(chip)} 
+                        <button
+                          key={chip}
+                          onClick={() => handleSendMessage(chip)}
                           className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/20 px-3 py-1.5 rounded-full border border-primary/20 transition-all flex-shrink-0"
                         >
                           {chip}
@@ -363,15 +363,15 @@ export default function ClientSpacePage() {
 
             {/* Input Form */}
             <div className="p-3 border-t border-[#2b2b2b] bg-[#1c1b1b] flex items-center gap-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(input)}
                 placeholder="Posez votre question..."
                 className="flex-1 bg-[#0D0D0D] border border-[#2b2b2b] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors text-white"
               />
-              <button 
+              <button
                 onClick={() => handleSendMessage(input)}
                 className="bg-primary text-white p-2 rounded-full hover:bg-[#a73a00] transition-colors disabled:opacity-50"
                 disabled={!input.trim()}
@@ -383,7 +383,7 @@ export default function ClientSpacePage() {
         )}
 
         {/* FAB Button */}
-        <button 
+        <button
           onClick={() => setChatOpen(!chatOpen)}
           className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${chatOpen ? 'bg-[#2b2b2b] text-white hover:scale-105' : 'bg-primary text-white hover:scale-110'}`}
         >
