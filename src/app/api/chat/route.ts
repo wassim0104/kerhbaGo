@@ -41,13 +41,13 @@ export async function POST(req: Request) {
     
     const text = await response.text();
     let reply = "Réponse reçue de l'assistant.";
-    let chips: string[] = [];
+    let chips: any[] = [];
     
     try {
       const data = JSON.parse(text);
       
       // Recursive function to find chips/suggestions in any nested object
-      const findChips = (obj: any): string[] => {
+      const findChips = (obj: any): any[] => {
         if (!obj || typeof obj !== 'object') return [];
         
         // Check current level
@@ -78,10 +78,10 @@ export async function POST(req: Request) {
       const rawData = Array.isArray(data) ? data[0] : data;
       reply = rawData?.message || rawData?.reply || rawData?.output || rawData?.text || (typeof rawData === 'string' ? rawData : JSON.stringify(rawData));
       
-      chips = findChips(data);
+      const foundChips = findChips(data);
       
       // Ensure chips is actually an array of strings
-      chips = chips.map(c => typeof c === 'string' ? c : (c?.text || c?.label || JSON.stringify(c)));
+      chips = foundChips.map(c => typeof c === 'string' ? c : (c?.text || c?.label || JSON.stringify(c)));
     } catch {
       reply = text || reply;
     }
