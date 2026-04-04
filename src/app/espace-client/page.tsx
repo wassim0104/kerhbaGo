@@ -8,8 +8,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function ClientSpacePage() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([]);
-  const [chips, setChips] = useState<string[]>([]);
+  const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string, chips?: string[]}[]>([]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +80,6 @@ export default function ClientSpacePage() {
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', text }]);
-    setChips([]);
     setInput('');
     
     try {
@@ -133,16 +131,18 @@ export default function ClientSpacePage() {
         
         setMessages(prev => [
           ...prev, 
-          ...lines.map(line => ({ role: 'bot' as const, text: line }))
+          ...lines.map((line, index) => ({ 
+            role: 'bot' as const, 
+            text: line,
+            // Attach chips only to the last bubble
+            chips: index === lines.length - 1 ? responseChips : [] 
+          }))
         ]);
-        setChips(responseChips);
       } else {
         setMessages(prev => [...prev, { role: 'bot', text: "Désolé, je ne peux pas traiter la demande." }]);
-        setChips([]);
       }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: "L'assistant IA est temporairement indisponible." }]);
-      setChips([]);
     }
   };
 
@@ -335,25 +335,31 @@ export default function ClientSpacePage() {
             {/* Messages Area */}
             <div className="h-[300px] bg-[#0D0D0D] p-4 overflow-y-auto space-y-4">
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-[#2b2b2b] text-white rounded-tr-sm' : 'bg-primary/10 text-primary border border-primary/20 rounded-tl-sm'}`}>
-                    {msg.text}
+                <div key={i} className="space-y-2">
+                  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-[#2b2b2b] text-white rounded-tr-sm' : 'bg-primary/10 text-primary border border-primary/20 rounded-tl-sm'}`}>
+                      {msg.text}
+                    </div>
                   </div>
+                  
+                  {/* Inline Chips (Suggestions) */}
+                  {msg.role === 'bot' && msg.chips && msg.chips.length > 0 && (
+                    <div className="flex gap-2 flex-wrap pb-2">
+                      {msg.chips.map((chip) => (
+                        <button 
+                          key={chip} 
+                          onClick={() => handleSendMessage(chip)} 
+                          className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/20 px-3 py-1.5 rounded-full border border-primary/20 transition-all flex-shrink-0"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
-
-            {/* Suggestions */}
-            {chips.length > 0 && (
-              <div className="px-4 py-2 bg-[#0D0D0D] flex gap-2 overflow-x-auto hide-scrollbar border-t border-[#2b2b2b]">
-                {chips.map((chip) => (
-                  <button key={chip} onClick={() => handleSendMessage(chip)} className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa] bg-[#1c1b1b] px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-[#2b2b2b] border border-[#2b2b2b] transition-colors">
-                    {chip}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* Input Form */}
             <div className="p-3 border-t border-[#2b2b2b] bg-[#1c1b1b] flex items-center gap-2">
