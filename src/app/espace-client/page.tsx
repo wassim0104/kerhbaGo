@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 export default function ClientSpacePage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'bot', text: string}[]>([]);
+  const [chips, setChips] = useState<string[]>([]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -111,11 +112,14 @@ export default function ClientSpacePage() {
       const data = await response.json();
       if (data.reply) {
         setMessages(prev => [...prev, { role: 'bot', text: data.reply }]);
+        setChips(data.chips || []);
       } else {
         setMessages(prev => [...prev, { role: 'bot', text: "Désolé, je ne peux pas traiter la demande." }]);
+        setChips([]);
       }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: "L'assistant IA est temporairement indisponible." }]);
+      setChips([]);
     }
   };
 
@@ -318,11 +322,11 @@ export default function ClientSpacePage() {
             </div>
 
             {/* Suggestions */}
-            {messages[messages.length - 1]?.role === 'bot' && (
+            {messages[messages.length - 1]?.role === 'bot' && chips.length > 0 && (
               <div className="px-4 py-2 bg-[#0D0D0D] flex gap-2 overflow-x-auto hide-scrollbar border-t border-[#2b2b2b]">
-                {["Modifier ma réservation", "Prolonger (+2j)", "Annuler"].map((sug) => (
-                  <button key={sug} onClick={() => handleSendMessage(sug)} className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa] bg-[#1c1b1b] px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-[#2b2b2b] border border-[#2b2b2b] transition-colors">
-                    {sug}
+                {chips.map((chip) => (
+                  <button key={chip} onClick={() => { setChips([]); handleSendMessage(chip); }} className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa] bg-[#1c1b1b] px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-[#2b2b2b] border border-[#2b2b2b] transition-colors">
+                    {chip}
                   </button>
                 ))}
               </div>

@@ -7,11 +7,9 @@ export async function POST(req: Request) {
 
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL_CHAT;
     
-    console.log("[CHAT API] Webhook URL configured:", n8nWebhookUrl ? "YES" : "NO");
-    
     if (!n8nWebhookUrl) {
       return NextResponse.json({ 
-        reply: "L'assistant IA n'est pas encore configuré (variable manquante)." 
+        reply: "L'assistant IA n'est pas encore configuré." 
       });
     }
 
@@ -21,44 +19,55 @@ export async function POST(req: Request) {
       userContext: userContext || {},
       timestamp: new Date().toISOString() 
     };
-    
-    console.log("[CHAT API] Sending to n8n:", JSON.stringify(payload));
 
-    // Call actual n8n Webhook
+    // Call n8n Webhook with a 25s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    
     const response = await fetch(n8nWebhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
     
-    console.log("[CHAT API] n8n response status:", response.status, response.statusText);
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[CHAT API] n8n error body:", errorText);
       return NextResponse.json({ 
-        reply: `Erreur n8n (${response.status}): L'assistant est temporairement indisponible.` 
+        reply: `L'assistant est temporairement indisponible (${response.status}).` 
       });
     }
     
-    // Handle various n8n response formats
     const text = await response.text();
-    console.log("[CHAT API] n8n raw response:", text);
-    
     let reply = "Réponse reçue de l'assistant.";
+    let chips: string[] = [];
     
     try {
       const data = JSON.parse(text);
-      reply = data.reply || data.output || data.message || data.text || JSON.stringify(data);
+      
+      // n8n can return different formats:
+      // Array: [{message: "...", chips: [...]}]
+      // Object: {reply: "..."} or {message: "..."} or {output: "..."}
+      if (Array.isArray(data)) {
+        const first = data[0];
+        reply = first?.message || first?.reply || first?.output || first?.text || JSON.stringify(first);
+        chips = first?.chips || [];
+      } else {
+        reply = data.reply || data.output || data.message || data.text || JSON.stringify(data);
+        chips = data.chips || [];
+      }
     } catch {
       reply = text || reply;
     }
     
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply, chips });
   } catch (error: any) {
-    console.error("[CHAT API] FULL ERROR:", error?.message, error?.cause);
+    const isTimeout = error?.name === 'AbortError';
     return NextResponse.json({ 
-      reply: `Erreur de connexion: ${error?.message || 'timeout'}. Vérifiez que le workflow n8n est actif.` 
+      reply: isTimeout 
+        ? "L'assistant met trop de temps à répondre. Réessayez dans un instant." 
+        : `Erreur de connexion: ${error?.message || 'inconnue'}.`
     });
   }
 }
